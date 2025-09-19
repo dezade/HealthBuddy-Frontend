@@ -24,7 +24,11 @@ import {
   WorkoutPlan,
   HealthReport,
   Notification,
-  ShareReportRequest
+  ShareReportRequest,
+  Appointment,
+  Doctor,
+  CreateAppointmentRequest,
+  AppointmentsQueryParams
 } from './types'
 
 // Health Data Hooks
@@ -487,5 +491,167 @@ export function useNotifications() {
     markAsRead,
     markAllAsRead,
     refetch: fetchNotifications
+  }
+}
+
+// Appointments Hook
+export function useAppointments() {
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isBooking, setIsBooking] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
+  const [isRescheduling, setIsRescheduling] = useState(false)
+
+  // Mock data for now - replace with actual API calls
+  const mockDoctors: Doctor[] = [
+    { id: '1', name: 'Sarah Johnson', specialty: 'General Practice' },
+    { id: '2', name: 'Michael Chen', specialty: 'Cardiology' },
+    { id: '3', name: 'Emily Rodriguez', specialty: 'Dermatology' },
+    { id: '4', name: 'David Kim', specialty: 'Ophthalmology' },
+    { id: '5', name: 'Lisa Thompson', specialty: 'Psychiatry' }
+  ]
+
+  const mockAppointments: Appointment[] = [
+    {
+      id: '1',
+      doctorId: '1',
+      doctorName: 'Sarah Johnson',
+      specialty: 'General Practice',
+      type: 'general',
+      mode: 'in-person',
+      status: 'confirmed',
+      dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
+      location: '123 Health St, Suite 100',
+      notes: 'Annual checkup',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: '2',
+      doctorId: '2',
+      doctorName: 'Michael Chen',
+      specialty: 'Cardiology',
+      type: 'cardiology',
+      mode: 'video',
+      status: 'pending',
+      dateTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
+      notes: 'Follow-up consultation',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+  ]
+
+  const fetchAppointments = useCallback(async (params?: AppointmentsQueryParams) => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      // TODO: Replace with actual API call when backend is ready
+      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API delay
+      setAppointments(mockAppointments)
+      setDoctors(mockDoctors)
+    } catch (err) {
+      setError(handleApiError(err))
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  const bookAppointment = useCallback(async (request: CreateAppointmentRequest) => {
+    try {
+      setIsBooking(true)
+      setError(null)
+      
+      // TODO: Replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 1500)) // Simulate API delay
+      
+      const doctor = mockDoctors.find(d => d.id === request.doctorId)
+      const newAppointment: Appointment = {
+        id: Date.now().toString(),
+        doctorId: request.doctorId,
+        doctorName: doctor?.name || 'Unknown Doctor',
+        specialty: doctor?.specialty || 'Unknown',
+        type: request.type,
+        mode: request.mode,
+        status: 'pending',
+        dateTime: request.dateTime,
+        notes: request.notes,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      
+      setAppointments(prev => [...prev, newAppointment])
+    } catch (err) {
+      setError(handleApiError(err))
+      throw err
+    } finally {
+      setIsBooking(false)
+    }
+  }, [])
+
+  const cancelAppointment = useCallback(async (appointmentId: string) => {
+    try {
+      setIsCancelling(true)
+      setError(null)
+      
+      // TODO: Replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API delay
+      
+      setAppointments(prev => 
+        prev.map(apt => 
+          apt.id === appointmentId 
+            ? { ...apt, status: 'cancelled' as const, updatedAt: new Date().toISOString() }
+            : apt
+        )
+      )
+    } catch (err) {
+      setError(handleApiError(err))
+      throw err
+    } finally {
+      setIsCancelling(false)
+    }
+  }, [])
+
+  const rescheduleAppointment = useCallback(async (appointmentId: string, newDateTime: string) => {
+    try {
+      setIsRescheduling(true)
+      setError(null)
+      
+      // TODO: Replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API delay
+      
+      setAppointments(prev => 
+        prev.map(apt => 
+          apt.id === appointmentId 
+            ? { ...apt, dateTime: newDateTime, status: 'pending' as const, updatedAt: new Date().toISOString() }
+            : apt
+        )
+      )
+    } catch (err) {
+      setError(handleApiError(err))
+      throw err
+    } finally {
+      setIsRescheduling(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchAppointments()
+  }, [fetchAppointments])
+
+  return {
+    appointments,
+    doctors,
+    isLoading,
+    error,
+    bookAppointment,
+    cancelAppointment,
+    rescheduleAppointment,
+    isBooking,
+    isCancelling,
+    isRescheduling,
+    refetch: fetchAppointments
   }
 }

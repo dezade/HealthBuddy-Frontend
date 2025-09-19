@@ -1,7 +1,7 @@
 // API management utilities
 // Backend integration with authentication support
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api"
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5001/api"
 
 // Standard API Response format
 export interface ApiResponse<T> {

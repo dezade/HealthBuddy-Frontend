@@ -45,6 +45,7 @@ import {
 import { format, parseISO, isSameDay, isToday, isTomorrow, isThisWeek, addDays } from "date-fns"
 import { cn } from "@/lib/utils"
 import { useAppointments } from "@/lib/hooks"
+import type { AppointmentType, AppointmentMode } from "@/lib/types"
 
 const appointmentTypes = [
   { value: 'general', label: 'General Checkup', icon: Stethoscope },
@@ -84,8 +85,8 @@ export default function AppointmentsPage() {
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedDoctor, setSelectedDoctor] = useState('')
-  const [selectedType, setSelectedType] = useState('')
-  const [selectedMode, setSelectedMode] = useState('in-person')
+  const [selectedType, setSelectedType] = useState<AppointmentType | ''>('')
+  const [selectedMode, setSelectedMode] = useState<AppointmentMode>('in-person')
   const [selectedTime, setSelectedTime] = useState('')
   const [appointmentNotes, setAppointmentNotes] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -95,7 +96,7 @@ export default function AppointmentsPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
 
-  const filteredAppointments = appointments?.filter(appointment => {
+  const filteredAppointments = appointments?.filter((appointment: any) => {
     const matchesSearch = appointment.doctorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          appointment.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          appointment.location?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -104,15 +105,15 @@ export default function AppointmentsPage() {
     return matchesSearch && matchesType && matchesStatus
   }) || []
 
-  const upcomingAppointments = filteredAppointments.filter(apt => 
+  const upcomingAppointments = filteredAppointments.filter((apt: any) => 
     new Date(apt.dateTime) > new Date() && apt.status !== 'cancelled'
   )
 
-  const pastAppointments = filteredAppointments.filter(apt => 
+  const pastAppointments = filteredAppointments.filter((apt: any) => 
     new Date(apt.dateTime) < new Date() || apt.status === 'cancelled'
   )
 
-  const todayAppointments = filteredAppointments.filter(apt => 
+  const todayAppointments = filteredAppointments.filter((apt: any) => 
     isToday(new Date(apt.dateTime)) && apt.status !== 'cancelled'
   )
 
@@ -133,7 +134,7 @@ export default function AppointmentsPage() {
 
       await bookAppointment({
         doctorId: selectedDoctor,
-        type: selectedType,
+        type: selectedType as AppointmentType,
         mode: selectedMode,
         dateTime: appointmentDateTime.toISOString(),
         notes: appointmentNotes
@@ -266,7 +267,7 @@ export default function AppointmentsPage() {
                       <SelectValue placeholder="Select a doctor" />
                     </SelectTrigger>
                     <SelectContent>
-                      {doctors?.map((doctor) => (
+                      {doctors?.map((doctor: any) => (
                         <SelectItem key={doctor.id} value={doctor.id}>
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4" />
@@ -280,7 +281,7 @@ export default function AppointmentsPage() {
 
                 <div className="space-y-2">
                   <Label>Appointment Type</Label>
-                  <Select value={selectedType} onValueChange={setSelectedType}>
+                  <Select value={selectedType} onValueChange={(value) => setSelectedType(value as AppointmentType)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select appointment type" />
                     </SelectTrigger>
@@ -299,7 +300,7 @@ export default function AppointmentsPage() {
 
                 <div className="space-y-2">
                   <Label>Appointment Mode</Label>
-                  <Select value={selectedMode} onValueChange={setSelectedMode}>
+                  <Select value={selectedMode} onValueChange={(value) => setSelectedMode(value as AppointmentMode)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -494,7 +495,7 @@ export default function AppointmentsPage() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {upcomingAppointments.map((appointment, index) => {
+                {upcomingAppointments.map((appointment: any, index: number) => {
                   const appointmentType = appointmentTypes.find(type => type.value === appointment.type)
                   const appointmentMode = appointmentModes.find(mode => mode.value === appointment.mode)
                   const StatusIcon = getStatusIcon(appointment.status)
@@ -631,7 +632,7 @@ export default function AppointmentsPage() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {pastAppointments.map((appointment, index) => {
+                {pastAppointments.map((appointment: any, index: number) => {
                   const appointmentType = appointmentTypes.find(type => type.value === appointment.type)
                   const StatusIcon = getStatusIcon(appointment.status)
                   

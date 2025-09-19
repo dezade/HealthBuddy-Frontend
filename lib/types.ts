@@ -411,3 +411,48 @@ export interface ReportsQueryParams {
   type?: ReportType
   limit?: number
 }
+
+// Appointment interfaces
+export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled'
+export type AppointmentMode = 'in-person' | 'video' | 'phone'
+export type AppointmentType = 'general' | 'cardiology' | 'dermatology' | 'ophthalmology' | 'psychiatry' | 'pharmacy'
+
+export interface Appointment {
+  id: string
+  doctorId: string
+  doctorName: string
+  specialty: string
+  type: AppointmentType
+  mode: AppointmentMode
+  status: AppointmentStatus
+  dateTime: string
+  location?: string
+  notes?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Doctor {
+  id: string
+  name: string
+  specialty: string
+  email?: string
+  phone?: string
+  location?: string
+}
+
+export interface CreateAppointmentRequest {
+  doctorId: string
+  type: AppointmentType
+  mode: AppointmentMode
+  dateTime: string
+  notes?: string
+}
+
+export interface AppointmentsQueryParams {
+  status?: AppointmentStatus
+  type?: AppointmentType
+  startDate?: string
+  endDate?: string
+  limit?: number
+}
