@@ -155,13 +155,25 @@ export class UserAPI {
 
 // Legacy API object for backward compatibility
 export const authApi = {
-  login: AuthAPI.login,
-  register: AuthAPI.register,
-  logout: AuthAPI.logout,
-  forgotPassword: AuthAPI.forgotPassword,
-  resetPassword: AuthAPI.resetPassword,
-  verifyEmail: AuthAPI.verifyEmail,
-  isAuthenticated: AuthAPI.isAuthenticated,
+  login: async (data: LoginRequest): Promise<ApiResponse<LoginResponse>> => {
+    return AuthAPI.login(data)
+  },
+  register: async (data: RegisterRequest): Promise<ApiResponse<{ user: User }>> => {
+    return AuthAPI.register(data)
+  },
+  logout: async (): Promise<ApiResponse<Record<string, never>>> => {
+    return AuthAPI.logout()
+  },
+  forgotPassword: async (data: ForgotPasswordRequest): Promise<ApiResponse<Record<string, never>>> => {
+    return AuthAPI.forgotPassword(data)
+  },
+  resetPassword: async (data: ResetPasswordRequest): Promise<ApiResponse<Record<string, never>>> => {
+    return AuthAPI.resetPassword(data)
+  },
+  verifyEmail: async (data: VerifyEmailRequest): Promise<ApiResponse<Record<string, never>>> => {
+    return AuthAPI.verifyEmail(data)
+  },
+  isAuthenticated: (): boolean => AuthAPI.isAuthenticated(),
   getCurrentUser: async (): Promise<User | null> => {
     try {
       // Check if tokens exist before making API call
@@ -177,8 +189,8 @@ export const authApi = {
       return null
     }
   },
-  clearTokens: AuthAPI.clearTokens,
-  getStoredTokens: AuthAPI.getStoredTokens
+  clearTokens: (): void => AuthAPI.clearTokens(),
+  getStoredTokens: (): AuthTokens | null => AuthAPI.getStoredTokens()
 }
 
 // Auth context utilities for React components
