@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Heart, Brain, Activity, Users, Shield, Zap } from "lucide-react"
 import Link from "next/link"
+import { LandingTopbar } from "@/components/landing/landing-topbar"
 
 export function LandingPage() {
   const features = [
@@ -42,8 +43,11 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Topbar Navigation */}
+      <LandingTopbar />
+      
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+      <section className="relative overflow-hidden bg-gradient-to-br from-emerald-50/50 via-background to-blue-50/50 dark:from-emerald-950/10 dark:via-background dark:to-blue-950/10">
         <div className="container mx-auto px-4 py-20 lg:py-32">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -52,7 +56,7 @@ export function LandingPage() {
             className="text-center max-w-4xl mx-auto"
           >
             <motion.h1
-              className="text-4xl md:text-6xl lg:text-7xl font-bold text-balance mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"
+              className="text-4xl md:text-6xl lg:text-7xl font-bold text-balance mb-6 bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
@@ -74,10 +78,19 @@ export function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
             >
-              <Button asChild size="lg" className="text-lg px-8 py-6">
+              <Button 
+                asChild 
+                size="lg" 
+                className="text-lg px-8 py-6 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"
+              >
                 <Link href="/signup">Get Started Free</Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="text-lg px-8 py-6 bg-transparent">
+              <Button 
+                asChild 
+                variant="outline" 
+                size="lg" 
+                className="text-lg px-8 py-6 bg-transparent border-2 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-blue-50 dark:hover:from-emerald-950/20 dark:hover:to-blue-950/20 transition-all duration-300"
+              >
                 <Link href="/signin">Sign In</Link>
               </Button>
             </motion.div>

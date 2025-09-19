@@ -12,8 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Heart, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/hooks/use-auth"
+import { useRouter } from "next/navigation"
 
 export function SignUpForm() {
+  const router = useRouter()
+  const { register, isLoading, error } = useAuth()
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -21,20 +25,40 @@ export function SignUpForm() {
     password: "",
     confirmPassword: "",
     dateOfBirth: "",
-    gender: "",
-    height: "",
-    weight: "",
-    activityLevel: "",
-    medicalConditions: "",
-    allergies: "",
+    gender: "" as "" | "MALE" | "FEMALE" | "OTHER" | "PREFER_NOT_TO_SAY",
     agreeToTerms: false,
     agreeToPrivacy: false,
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Backend integration will be handled later
-    console.log("Sign up form submitted:", formData)
+
+    // Validation
+    if (formData.password !== formData.confirmPassword) {
+      return // Error will be handled by the auth hook
+    }
+
+    if (!formData.agreeToTerms || !formData.agreeToPrivacy) {
+      return // Error will be handled by the auth hook
+    }
+
+    // Prepare data for API (only include optional fields if they have values)
+    const registrationData = {
+      email: formData.email,
+      password: formData.password,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      ...(formData.dateOfBirth && { dateOfBirth: formData.dateOfBirth }),
+      ...(formData.gender && { gender: formData.gender }),
+    }
+
+    const success = await register(registrationData)
+
+    if (success) {
+      // Show success message or redirect to email verification page
+      alert("Registration successful! Please check your email to verify your account.")
+      router.push("/signin")
+    }
   }
 
   return (
@@ -46,6 +70,13 @@ export function SignUpForm() {
     >
       <Card className="shadow-2xl">
         <CardHeader className="text-center space-y-4">
+          <Link
+            href="/"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Home
+          </Link>
           <div className="flex items-center justify-center">
             <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
               <Heart className="w-6 h-6 text-white" />
@@ -57,6 +88,11 @@ export function SignUpForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Personal Information */}
             <div className="space-y-4">
@@ -90,7 +126,7 @@ export function SignUpForm() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Enter your email address"
+                  placeholder="Enter your email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
@@ -102,7 +138,7 @@ export function SignUpForm() {
                   <Input
                     id="password"
                     type="password"
-                    placeholder="Create a strong password"
+                    placeholder="Create a password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
@@ -120,103 +156,34 @@ export function SignUpForm() {
                   />
                 </div>
               </div>
-            </div>
-
-            {/* Health Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-primary">Health Profile</h3>
+              {/* Optional fields as per API */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                  <Label htmlFor="dateOfBirth">Date of Birth (Optional)</Label>
                   <Input
                     id="dateOfBirth"
                     type="date"
                     value={formData.dateOfBirth}
                     onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
+                  <Label htmlFor="gender">Gender (Optional)</Label>
                   <Select
                     value={formData.gender}
-                    onValueChange={(value) => setFormData({ ...formData, gender: value })}
+                    onValueChange={(value) => setFormData({ ...formData, gender: value as typeof formData.gender })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                      <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                      <SelectItem value="MALE">Male</SelectItem>
+                      <SelectItem value="FEMALE">Female</SelectItem>
+                      <SelectItem value="OTHER">Other</SelectItem>
+                      <SelectItem value="PREFER_NOT_TO_SAY">Prefer not to say</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="height">Height (cm)</Label>
-                  <Input
-                    id="height"
-                    type="number"
-                    placeholder="Enter your height"
-                    value={formData.height}
-                    onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="weight">Weight (kg)</Label>
-                  <Input
-                    id="weight"
-                    type="number"
-                    placeholder="Enter your weight"
-                    value={formData.weight}
-                    onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="activityLevel">Activity Level</Label>
-                <Select
-                  value={formData.activityLevel}
-                  onValueChange={(value) => setFormData({ ...formData, activityLevel: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your activity level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sedentary">Sedentary (little to no exercise)</SelectItem>
-                    <SelectItem value="lightly-active">Lightly Active (light exercise 1-3 days/week)</SelectItem>
-                    <SelectItem value="moderately-active">
-                      Moderately Active (moderate exercise 3-5 days/week)
-                    </SelectItem>
-                    <SelectItem value="very-active">Very Active (hard exercise 6-7 days/week)</SelectItem>
-                    <SelectItem value="extremely-active">
-                      Extremely Active (very hard exercise, physical job)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="medicalConditions">Medical Conditions (Optional)</Label>
-                <Input
-                  id="medicalConditions"
-                  type="text"
-                  placeholder="List any medical conditions"
-                  value={formData.medicalConditions}
-                  onChange={(e) => setFormData({ ...formData, medicalConditions: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="allergies">Allergies (Optional)</Label>
-                <Input
-                  id="allergies"
-                  type="text"
-                  placeholder="List any allergies"
-                  value={formData.allergies}
-                  onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
-                />
               </div>
             </div>
 
@@ -252,28 +219,26 @@ export function SignUpForm() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" size="lg">
-              Create Account
+            {/* Submit Button */}
+            <Button 
+              type="submit" 
+              className="w-full" 
+              size="lg"
+              disabled={isLoading}
+            >
+              {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
+
+            {/* Sign In Link */}
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                Already have an account?{" "}
+                <Link href="/signin" className="text-primary hover:underline font-medium">
+                  Sign in here
+                </Link>
+              </p>
+            </div>
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link href="/signin" className="text-primary hover:underline font-medium">
-                Sign in here
-              </Link>
-            </p>
-          </div>
-
-          <div className="mt-4">
-            <Button asChild variant="ghost" className="w-full">
-              <Link href="/">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Link>
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </motion.div>

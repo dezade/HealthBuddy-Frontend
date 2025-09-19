@@ -11,18 +11,27 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Heart, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/hooks/use-auth"
+import { useRouter } from "next/navigation"
 
 export function SignInForm() {
+  const router = useRouter()
+  const { login, isLoading, error } = useAuth()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     rememberMe: false,
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Backend integration will be handled later
-    console.log("Sign in form submitted:", formData)
+
+    const success = await login(formData.email, formData.password)
+    
+    if (success) {
+      // Redirect to dashboard on successful login
+      router.push("/dashboard")
+    }
   }
 
   return (
@@ -43,6 +52,11 @@ export function SignInForm() {
           <CardDescription className="text-base">Sign in to continue your health journey</CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
@@ -83,8 +97,13 @@ export function SignInForm() {
               </Link>
             </div>
 
-            <Button type="submit" className="w-full" size="lg">
-              Sign In
+            <Button 
+              type="submit" 
+              className="w-full" 
+              size="lg"
+              disabled={isLoading}
+            >
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
 
