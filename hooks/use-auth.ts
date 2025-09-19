@@ -28,10 +28,21 @@ export function useAuth(): UseAuthReturn {
 
   // Check if user is authenticated on mount
   useEffect(() => {
-    const currentUser = authApi.getCurrentUser()
-    if (currentUser) {
-      setUser(currentUser)
+    const checkAuth = async () => {
+      try {
+        // Only check if tokens exist in localStorage first
+        if (authApi.isAuthenticated()) {
+          const currentUser = await authApi.getCurrentUser()
+          if (currentUser) {
+            setUser(currentUser)
+          }
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error)
+        authApi.clearTokens()
+      }
     }
+    checkAuth()
   }, [])
 
   const isAuthenticated = !!user && authApi.isAuthenticated()

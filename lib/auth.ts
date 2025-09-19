@@ -1,209 +1,225 @@
 import { apiClient, ApiResponse } from './api'
+import { 
+  User, 
+  AuthTokens, 
+  LoginRequest, 
+  RegisterRequest, 
+  LoginResponse,
+  RefreshTokenRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  VerifyEmailRequest,
+  UpdateProfileRequest,
+  ChangePasswordRequest
+} from './types'
 
-// Auth API types based on the backend documentation
-export interface User {
-  id: string
-  email: string
-  firstName: string
-  lastName: string
-  role: 'USER' | 'HEALTHCARE_PROFESSIONAL' | 'ADMIN'
-  isEmailVerified: boolean
-  dateOfBirth?: string
-  gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY'
-  height?: number
-  activityLevel?: 'SEDENTARY' | 'LIGHTLY_ACTIVE' | 'MODERATELY_ACTIVE' | 'VERY_ACTIVE' | 'EXTREMELY_ACTIVE'
-  medicalConditions?: string[]
-  allergies?: string[]
-  profilePictureUrl?: string
-  profile?: UserProfile
-  createdAt: string
-  updatedAt: string
-}
-
-export interface UserProfile {
-  currentWeight?: number
-  goalWeight?: number
-  fitnessGoals?: string[]
-  dietaryPreferences?: string[]
-  emergencyContactName?: string
-  emergencyContactPhone?: string
-  preferredLanguage?: string
-  timezone?: string
-}
-
-export interface AuthTokens {
-  accessToken: string
-  refreshToken: string
-}
-
-export interface LoginRequest {
-  email: string
-  password: string
-}
-
-export interface RegisterRequest {
-  email: string
-  password: string
-  firstName: string
-  lastName: string
-  dateOfBirth?: string
-  gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY'
-}
-
-export interface LoginResponse {
-  user: User
-  tokens: AuthTokens
-}
-
-export interface RegisterResponse {
-  user: User
-}
-
-export interface RefreshTokenRequest {
-  refreshToken: string
-}
-
-export interface RefreshTokenResponse {
-  tokens: AuthTokens
-}
-
-export interface ForgotPasswordRequest {
-  email: string
-}
-
-export interface ResetPasswordRequest {
-  token: string
-  password: string
-}
-
-export interface VerifyEmailRequest {
-  token: string
-}
-
-export interface ChangePasswordRequest {
-  currentPassword: string
-  newPassword: string
-}
-
-// Auth API functions
-export const authApi = {
-  // Register a new user
-  async register(userData: RegisterRequest): Promise<ApiResponse<RegisterResponse>> {
-    return apiClient.post<RegisterResponse>('/auth/register', userData)
-  },
+// Authentication API functions
+export class AuthAPI {
+  // Register new user
+  static async register(data: RegisterRequest): Promise<ApiResponse<{ user: User }>> {
+    return apiClient.post('/auth/register', data)
+  }
 
   // Login user
-  async login(credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> {
-    const response = await apiClient.post<LoginResponse>('/auth/login', credentials)
+  static async login(data: LoginRequest): Promise<ApiResponse<LoginResponse>> {
+    const response = await apiClient.post<LoginResponse>('/auth/login', data)
     
-    // Store tokens in localStorage if login successful
+    // Store tokens in localStorage
     if (response.success && response.data?.tokens) {
-      localStorage.setItem('accessToken', response.data.tokens.accessToken)
-      localStorage.setItem('refreshToken', response.data.tokens.refreshToken)
-      localStorage.setItem('user', JSON.stringify(response.data.user))
+      this.storeTokens(response.data.tokens)
     }
     
     return response
-  },
-
-  // Logout user
-  async logout(): Promise<ApiResponse<void>> {
-    const response = await apiClient.post<void>('/auth/logout', {})
-    
-    // Clear stored tokens
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
-    localStorage.removeItem('user')
-    
-    return response
-  },
+  }
 
   // Refresh access token
-  async refreshToken(): Promise<ApiResponse<RefreshTokenResponse>> {
-    const refreshToken = localStorage.getItem('refreshToken')
-    
-    if (!refreshToken) {
-      throw new Error('No refresh token available')
-    }
-
-    const response = await apiClient.post<RefreshTokenResponse>('/auth/refresh', { refreshToken })
+  static async refreshToken(data: RefreshTokenRequest): Promise<ApiResponse<{ tokens: AuthTokens }>> {
+    const response = await apiClient.post<{ tokens: AuthTokens }>('/auth/refresh', data)
     
     // Update stored tokens
     if (response.success && response.data?.tokens) {
-      localStorage.setItem('accessToken', response.data.tokens.accessToken)
-      localStorage.setItem('refreshToken', response.data.tokens.refreshToken)
+      this.storeTokens(response.data.tokens)
     }
     
     return response
-  },
+  }
+
+  // Logout user
+  static async logout(): Promise<ApiResponse<Record<string, never>>> {
+    const response = await apiClient.post<Record<string, never>>('/auth/logout')
+    
+    // Clear stored tokens
+    this.clearTokens()
+    
+    return response
+  }
 
   // Request password reset
-  async forgotPassword(email: string): Promise<ApiResponse<void>> {
-    return apiClient.post<void>('/auth/forgot-password', { email })
-  },
+  static async forgotPassword(data: ForgotPasswordRequest): Promise<ApiResponse<Record<string, never>>> {
+    return apiClient.post('/auth/forgot-password', data)
+  }
 
   // Reset password with token
-  async resetPassword(data: ResetPasswordRequest): Promise<ApiResponse<void>> {
-    return apiClient.post<void>('/auth/reset-password', data)
-  },
+  static async resetPassword(data: ResetPasswordRequest): Promise<ApiResponse<Record<string, never>>> {
+    return apiClient.post('/auth/reset-password', data)
+  }
 
   // Verify email address
-  async verifyEmail(token: string): Promise<ApiResponse<void>> {
-    return apiClient.post<void>('/auth/verify-email', { token })
-  },
+  static async verifyEmail(data: VerifyEmailRequest): Promise<ApiResponse<Record<string, never>>> {
+    return apiClient.post('/auth/verify-email', data)
+  }
 
-  // Get current user from localStorage
-  getCurrentUser(): User | null {
+  // Token management utilities
+  static storeTokens(tokens: AuthTokens): void {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('accessToken', tokens.accessToken)
+      localStorage.setItem('refreshToken', tokens.refreshToken)
+    }
+  }
+
+  static getStoredTokens(): AuthTokens | null {
     if (typeof window === 'undefined') return null
     
-    const userStr = localStorage.getItem('user')
-    return userStr ? JSON.parse(userStr) : null
-  },
+    const accessToken = localStorage.getItem('accessToken')
+    const refreshToken = localStorage.getItem('refreshToken')
+    
+    if (!accessToken || !refreshToken) return null
+    
+    return { accessToken, refreshToken }
+  }
+
+  static clearTokens(): void {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+    }
+  }
 
   // Check if user is authenticated
-  isAuthenticated(): boolean {
-    if (typeof window === 'undefined') return false
-    
-    const token = localStorage.getItem('accessToken')
-    return !!token
-  },
+  static isAuthenticated(): boolean {
+    return this.getStoredTokens() !== null
+  }
 
-  // Get stored access token
-  getAccessToken(): string | null {
-    if (typeof window === 'undefined') return null
-    
-    return localStorage.getItem('accessToken')
-  },
+  // Auto-refresh token if needed
+  static async ensureValidToken(): Promise<boolean> {
+    const tokens = this.getStoredTokens()
+    if (!tokens) return false
 
-  // Clear all auth data
-  clearAuthData(): void {
-    if (typeof window === 'undefined') return
-    
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
-    localStorage.removeItem('user')
+    try {
+      // Try to use current token with a simple API call
+      await apiClient.get('/users/profile')
+      return true
+    } catch (error) {
+      console.log('Token validation failed, attempting refresh...')
+      // Token might be expired, try to refresh
+      try {
+        await this.refreshToken({ refreshToken: tokens.refreshToken })
+        return true
+      } catch (refreshError) {
+        console.log('Token refresh failed, clearing tokens')
+        // Refresh failed, clear tokens but don't redirect automatically
+        this.clearTokens()
+        return false
+      }
+    }
   }
 }
 
-// User profile API functions
-export const userApi = {
-  // Get user profile
-  async getProfile(): Promise<ApiResponse<{ user: User }>> {
-    return apiClient.get<{ user: User }>('/users/profile')
-  },
+// User Management API functions
+export class UserAPI {
+  // Get current user profile
+  static async getProfile(): Promise<ApiResponse<{ user: User }>> {
+    return apiClient.get('/users/profile')
+  }
 
   // Update user profile
-  async updateProfile(profileData: Partial<User & { profileData?: Partial<UserProfile> }>): Promise<ApiResponse<{ user: User }>> {
-    return apiClient.put<{ user: User }>('/users/profile', profileData)
-  },
+  static async updateProfile(data: UpdateProfileRequest): Promise<ApiResponse<{ user: User }>> {
+    return apiClient.put('/users/profile', data)
+  }
 
   // Change password
-  async changePassword(data: ChangePasswordRequest): Promise<ApiResponse<void>> {
-    return apiClient.put<void>('/users/change-password', data)
-  },
+  static async changePassword(data: ChangePasswordRequest): Promise<ApiResponse<Record<string, never>>> {
+    return apiClient.put('/users/change-password', data)
+  }
 
   // Delete account
-  async deleteAccount(): Promise<ApiResponse<void>> {
-    return apiClient.delete<void>('/users/account')
+  static async deleteAccount(): Promise<ApiResponse<Record<string, never>>> {
+    const response = await apiClient.delete<Record<string, never>>('/users/account')
+    
+    // Clear tokens after account deletion
+    AuthAPI.clearTokens()
+    
+    return response
   }
 }
+
+// Legacy API object for backward compatibility
+export const authApi = {
+  login: AuthAPI.login,
+  register: AuthAPI.register,
+  logout: AuthAPI.logout,
+  forgotPassword: AuthAPI.forgotPassword,
+  resetPassword: AuthAPI.resetPassword,
+  verifyEmail: AuthAPI.verifyEmail,
+  isAuthenticated: AuthAPI.isAuthenticated,
+  getCurrentUser: async (): Promise<User | null> => {
+    try {
+      // Check if tokens exist before making API call
+      if (!AuthAPI.isAuthenticated()) {
+        return null
+      }
+      
+      const response = await UserAPI.getProfile()
+      return response.success ? response.data?.user || null : null
+    } catch (error) {
+      // If API call fails, clear invalid tokens and return null
+      AuthAPI.clearTokens()
+      return null
+    }
+  },
+  clearTokens: AuthAPI.clearTokens,
+  getStoredTokens: AuthAPI.getStoredTokens
+}
+
+// Auth context utilities for React components
+export const authUtils = {
+  getCurrentUser: async (): Promise<User | null> => {
+    try {
+      // Check if tokens exist before making API call
+      if (!AuthAPI.isAuthenticated()) {
+        return null
+      }
+      
+      const response = await UserAPI.getProfile()
+      return response.success ? response.data?.user || null : null
+    } catch (error) {
+      // If API call fails, clear invalid tokens and return null
+      AuthAPI.clearTokens()
+      return null
+    }
+  },
+
+  requireAuth: async (): Promise<User> => {
+    const user = await authUtils.getCurrentUser()
+    if (!user) {
+      throw new Error('Authentication required')
+    }
+    return user
+  },
+
+  signOut: async (): Promise<void> => {
+    try {
+      await AuthAPI.logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      AuthAPI.clearTokens()
+      if (typeof window !== 'undefined') {
+        window.location.href = '/signin'
+      }
+    }
+  }
+}
+
+// Export User type for use in hooks
+export type { User }
